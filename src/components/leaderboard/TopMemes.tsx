@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { useAppSelector } from '@/store/hooks';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function TopMemes() {
   const memes = useAppSelector((state) => state.memes.items);
@@ -27,7 +28,7 @@ export default function TopMemes() {
             <span className="text-2xl font-bold text-gray-400 w-8">
               #{index + 1}
             </span>
-            <img
+            <Image
               src={meme.imageUrl}
               alt={meme.title}
               className="w-16 h-16 object-cover rounded"

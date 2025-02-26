@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { TrophyIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 interface UserRank {
   id: string;
@@ -46,7 +47,7 @@ export default function UserRankings() {
             )}
             
             {user.avatar ? (
-              <img
+              <Image
                 src={user.avatar}
                 alt={user.username}
                 className="w-10 h-10 rounded-full"

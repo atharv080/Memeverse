@@ -23,6 +23,11 @@ export default function UserMemes() {
     : memes.filter(meme => likedMemes.includes(meme.id));
 
   return (
+    <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    className="space-y-6"
+  >
     <div className="space-y-6">
       <div className="flex space-x-4 border-b border-gray-200 dark:border-gray-700">
         <button
@@ -59,5 +64,6 @@ export default function UserMemes() {
         </div>
       )}
     </div>
+    </motion.div>
   );
 }
