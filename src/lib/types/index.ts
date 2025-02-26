@@ -13,6 +13,7 @@ export interface User {
   username: string;
   email?: string;
   avatar?: string;
+  bio?: string;
 }
 
 export type CategoryOption = 'trending' | 'new' | 'classic' | 'random';
