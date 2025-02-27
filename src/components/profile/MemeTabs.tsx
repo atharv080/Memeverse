@@ -35,14 +35,11 @@ export default function MemeTabs() {
       setLoading(true);
       try {
         if (activeTab === 'liked') {
-          // Get liked meme IDs from localStorage
+          // Existing liked memes logic remains the same
           const likedMemeIds = JSON.parse(localStorage.getItem('likedMemes') || '[]');
-          
-          // Fetch memes from API
           const response = await fetch('https://api.imgflip.com/get_memes');
           const data: ApiResponse = await response.json();
           
-          // Filter and transform liked memes
           const likedMemes = data.data.memes
             .filter((meme: ApiMeme) => likedMemeIds.includes(meme.id))
             .map((meme: ApiMeme) => ({
@@ -60,8 +57,10 @@ export default function MemeTabs() {
 
           setMemes(likedMemes);
         } else {
-          // For uploaded memes (empty for now)
-          setMemes([]);
+          // New logic for uploaded memes
+          const uploadedMemes = JSON.parse(localStorage.getItem('uploadedMemes') || '[]');
+          console.log('Fetched uploaded memes:', uploadedMemes); // Debug log
+          setMemes(uploadedMemes);
         }
       } catch (error) {
         console.error('Error fetching memes:', error);

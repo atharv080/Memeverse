@@ -7,6 +7,7 @@ const config = {
           hostname: 'i.imgflip.com',
         },
       ],
+      domains: ['i.ibb.co'],
     },
   };
   

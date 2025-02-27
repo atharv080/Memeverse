@@ -1,26 +1,32 @@
+// src/components/profile/UserMemes.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import MemeCard from '@/components/memes/MemeCard';
-import { useAppSelector } from '@/store/hooks';
-
+import { Button } from '@/components/common/Button';
+import { useRouter } from 'next/navigation';
+import { FolderIcon } from '@heroicons/react/24/outline';
+import { Meme } from '@/lib/types';
 export default function UserMemes() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'uploaded' | 'liked'>('uploaded');
-  const memes = useAppSelector((state) => state.memes.items);
-  const [likedMemes, setLikedMemes] = useState<string[]>([]);
+  const [memes, setMemes] = useState<Meme[]>([]);
 
   useEffect(() => {
-    // Get liked memes from localStorage
-    const stored = localStorage.getItem('likedMemes');
-    if (stored) {
-      setLikedMemes(JSON.parse(stored));
-    }
-  }, []);
+    // Load appropriate memes based on active tab
+    const loadMemes = () => {
+      if (activeTab === 'uploaded') {
+        const uploadedMemes = JSON.parse(localStorage.getItem('uploadedMemes') || '[]');
+        setMemes(uploadedMemes);
+      } else {
+        const likedMemes = JSON.parse(localStorage.getItem('likedMemes') || '[]');
+        setMemes(likedMemes);
+      }
+    };
 
-  const filteredMemes = activeTab === 'uploaded'
-    ? memes.slice(0, 3) // Simulate user's uploaded memes
-    : memes.filter(meme => likedMemes.includes(meme.id));
+    loadMemes();
+  }, [activeTab]);
 
   return (
     <motion.div
@@ -34,7 +40,7 @@ export default function UserMemes() {
           onClick={() => setActiveTab('uploaded')}
           className={`pb-2 px-4 ${
             activeTab === 'uploaded'
-              ? 'border-b-2 border-blue-500 text-blue-500'
+              ? 'text-blue-500 border-b-2 border-blue-500'
               : 'text-gray-500'
           }`}
         >
@@ -44,7 +50,7 @@ export default function UserMemes() {
           onClick={() => setActiveTab('liked')}
           className={`pb-2 px-4 ${
             activeTab === 'liked'
-              ? 'border-b-2 border-blue-500 text-blue-500'
+              ? 'text-blue-500 border-b-2 border-blue-500'
               : 'text-gray-500'
           }`}
         >
@@ -52,15 +58,29 @@ export default function UserMemes() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredMemes.map((meme) => (
-          <MemeCard key={meme.id} meme={meme} />
-        ))}
-      </div>
-
-      {filteredMemes.length === 0 && (
-        <div className="text-center py-12 text-gray-500">
-          No memes found in this category.
+      {memes.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {memes.map((meme) => (
+            <MemeCard key={meme.id} meme={meme} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <FolderIcon className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium mb-2">
+            {activeTab === 'uploaded' ? 'No memes uploaded yet' : 'No liked memes yet'}
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            {activeTab === 'uploaded' 
+              ? 'Start sharing your humor with the world!'
+              : 'Start liking memes to see them here!'}
+          </p>
+          <Button
+            onClick={() => router.push(activeTab === 'uploaded' ? '/upload' : '/explore')}
+            className="bg-blue-500 hover:bg-blue-600 text-white"
+          >
+            {activeTab === 'uploaded' ? 'Upload Your First Meme' : 'Explore Memes'}
+          </Button>
         </div>
       )}
     </div>

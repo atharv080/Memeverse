@@ -10,6 +10,8 @@ interface CaptionEditorProps {
   onCaptionChange: (topText: string, bottomText: string) => void;
   onGenerateAI: () => Promise<void>;
   isGenerating: boolean;
+  topText: string;
+  bottomText: string;
 }
 
 export default function CaptionEditor({ 
