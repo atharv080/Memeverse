@@ -14,6 +14,8 @@ interface CaptionEditorProps {
   bottomText: string;
 }
 
+
+
 export default function CaptionEditor({ 
   onCaptionChange, 
   onGenerateAI, 

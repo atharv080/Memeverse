@@ -8,10 +8,105 @@ import ImageUpload from '@/components/upload/ImageUpload';
 import CaptionEditor from '@/components/upload/CaptionEditor';
 import MemePreview from '@/components/upload/MemePreview';
 import { Button } from '@/components/common/Button';
-import { generateMemeCaption } from '@/lib/utils/aiCaption';
 
-// It's better to handle this through environment variables and a backend service
 const IMGBB_API_KEY = process.env.NEXT_PUBLIC_IMGBB_API_KEY || '77481efedac350777b1cb7232fd842f8';
+
+const renderMemeOnCanvas = async (
+  imageUrl: string,
+  topText: string,
+  bottomText: string
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        reject(new Error('Failed to get canvas context'));
+        return;
+      }
+
+      // Set canvas size to match image
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      // Draw image
+      ctx.drawImage(img, 0, 0);
+
+      // Configure text style
+      ctx.fillStyle = 'white';
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = Math.max(canvas.width * 0.004, 4); // Adjust line width based on image size
+      ctx.textAlign = 'center';
+
+      // Calculate font size based on image width
+      const fontSize = Math.max(canvas.width * 0.08, 30); // Minimum font size of 30px
+      ctx.font = `bold ${fontSize}px Impact`;
+
+      // Function to wrap text
+      const wrapText = (text: string, maxWidth: number): string[] => {
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = words[0];
+
+        for (let i = 1; i < words.length; i++) {
+          const width = ctx.measureText(currentLine + ' ' + words[i]).width;
+          if (width < maxWidth) {
+            currentLine += ' ' + words[i];
+          } else {
+            lines.push(currentLine);
+            currentLine = words[i];
+          }
+        }
+        lines.push(currentLine);
+        return lines;
+      };
+
+      // Draw top text
+      if (topText) {
+        const maxWidth = canvas.width * 0.9;
+        const lines = wrapText(topText.toUpperCase(), maxWidth);
+        const lineHeight = fontSize * 1.2;
+        const totalHeight = lines.length * lineHeight;
+        const startY = Math.max(fontSize, totalHeight);
+
+        lines.forEach((line, index) => {
+          const y = startY + (index * lineHeight);
+          ctx.strokeText(line, canvas.width / 2, y);
+          ctx.fillText(line, canvas.width / 2, y);
+        });
+      }
+
+      // Draw bottom text
+      if (bottomText) {
+        const maxWidth = canvas.width * 0.9;
+        const lines = wrapText(bottomText.toUpperCase(), maxWidth);
+        const lineHeight = fontSize * 1.2;
+        const totalHeight = lines.length * lineHeight;
+        const startY = canvas.height - (totalHeight * 1.2);
+
+        lines.forEach((line, index) => {
+          const y = startY + (index * lineHeight);
+          ctx.strokeText(line, canvas.width / 2, y);
+          ctx.fillText(line, canvas.width / 2, y);
+        });
+      }
+
+      // Convert to base64 with high quality
+      resolve(canvas.toDataURL('image/jpeg', 1.0));
+    };
+
+    img.onerror = () => {
+      reject(new Error('Failed to load image'));
+    };
+
+    // Load image from URL
+    img.src = imageUrl;
+  });
+};
 
 export default function UploadPage() {
   const router = useRouter();
@@ -32,42 +127,32 @@ export default function UploadPage() {
   const handleCaptionChange = (top: string, bottom: string) => {
     setTopText(top);
     setBottomText(bottom);
-    setError(null);
   };
 
   const generateAICaption = async () => {
     setIsGenerating(true);
-    setError(null);
     try {
-      const { topText: newTopText, bottomText: newBottomText } = await generateMemeCaption();
-      setTopText(newTopText);
-      setBottomText(newBottomText);
-      handleCaptionChange(newTopText, newBottomText);
+      // Temporary mock captions for testing
+      const mockCaptions = [
+        { top: "When you finally", bottom: "fix that bug" },
+        { top: "Me explaining", bottom: "my code to rubber duck" },
+        { top: "Nobody:", bottom: "JavaScript developers" },
+        { top: "When the code", bottom: "works on first try" },
+        { top: "Debug the code", bottom: "Add more bugs" }
+      ];
+
+      // Randomly select a caption
+      const randomCaption = mockCaptions[Math.floor(Math.random() * mockCaptions.length)];
+      
+      setTopText(randomCaption.top);
+      setBottomText(randomCaption.bottom);
+      handleCaptionChange(randomCaption.top, randomCaption.bottom);
     } catch (error) {
       console.error('Error generating caption:', error);
-      setError('Failed to generate caption. Please try again.');
+      setError('Failed to generate caption');
     } finally {
       setIsGenerating(false);
     }
-  };
-
-  const uploadToImgBB = async (base64Image: string): Promise<string> => {
-    const formData = new FormData();
-    formData.append('image', base64Image);
-    formData.append('key', IMGBB_API_KEY);
-
-    const response = await fetch('https://api.imgbb.com/1/upload', {
-      method: 'POST',
-      body: formData,
-    });
-
-    const data = await response.json();
-
-    if (!data.success) {
-      throw new Error(data.error?.message || 'Failed to upload image');
-    }
-
-    return data.data.url;
   };
 
   const handleUpload = async () => {
@@ -80,20 +165,34 @@ export default function UploadPage() {
     setError(null);
 
     try {
-      // Extract base64 image data
-      const base64Image = previewUrl.split(',')[1];
-      if (!base64Image) {
-        throw new Error('Invalid image format');
-      }
+      // Render the meme with captions
+      const memeWithCaptions = await renderMemeOnCanvas(previewUrl, topText, bottomText);
+      
+      // Extract base64 data
+      const base64Image = memeWithCaptions.split(',')[1];
+      
+      // Create FormData for ImgBB
+      const formData = new FormData();
+      formData.append('key', IMGBB_API_KEY);
+      formData.append('image', base64Image);
 
-      // Upload image to ImgBB
-      const imageUrl = await uploadToImgBB(base64Image);
+      // Upload to ImgBB
+      const response = await fetch('https://api.imgbb.com/1/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error?.message || 'Failed to upload image');
+      }
 
       // Create meme object
       const newMeme = {
         id: Date.now().toString(),
         title: selectedFile.name.split('.')[0],
-        imageUrl: imageUrl,
+        imageUrl: data.data.url,
         topText,
         bottomText,
         likes: 0,
@@ -108,8 +207,8 @@ export default function UploadPage() {
       // Get existing uploaded memes
       const uploadedMemes = JSON.parse(localStorage.getItem('uploadedMemes') || '[]');
       
-      // Add new meme to uploaded memes
-      uploadedMemes.push(newMeme);
+      // Add new meme to the beginning of the array
+      uploadedMemes.unshift(newMeme);
       
       // Save updated list
       localStorage.setItem('uploadedMemes', JSON.stringify(uploadedMemes));
@@ -136,8 +235,8 @@ export default function UploadPage() {
 
       {error && (
         <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 
-                       text-red-700 dark:text-red-400 px-4 py-3 rounded relative">
-          <span className="block sm:inline">{error}</span>
+                       text-red-700 dark:text-red-400 px-4 py-3 rounded">
+          {error}
         </div>
       )}
 
@@ -147,12 +246,12 @@ export default function UploadPage() {
           
           {previewUrl && (
             <CaptionEditor
-            onCaptionChange={(top: string, bottom: string) => handleCaptionChange(top, bottom)}
-            onGenerateAI={generateAICaption}
-            isGenerating={isGenerating}
-            topText={topText}
-            bottomText={bottomText}
-          />
+              onCaptionChange={handleCaptionChange}
+              onGenerateAI={generateAICaption}
+              isGenerating={isGenerating}
+              topText={topText}
+              bottomText={bottomText}
+            />
           )}
         </div>
 
