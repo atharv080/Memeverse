@@ -99,6 +99,8 @@ export default function UploadPage() {
               onCaptionChange={handleCaptionChange}
               onGenerateAI={generateAICaption}
               isGenerating={isGenerating}
+              topText={topText}       // Add this
+              bottomText={bottomText} // Add this
             />
           )}
         </div>
