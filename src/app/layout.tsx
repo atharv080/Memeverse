@@ -12,7 +12,7 @@ const inter = Inter({ subsets: ['latin'] });
 //   description: 'Your Ultimate Meme Platform',
 // };
 export const metadata: Metadata = {
-  title: 'MemeVerse - 404 Not Found',
+  title: 'MemeVerse_By_Atharv',
   description: 'Page not found',
 };
 
