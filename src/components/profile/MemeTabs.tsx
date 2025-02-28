@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { FolderIcon } from '@heroicons/react/24/outline';
+import { FolderIcon,TrashIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/common/Button';
 import MemeCard from '@/components/memes/MemeCard';
 import type { Meme } from '@/lib/types';
@@ -72,7 +72,25 @@ export default function MemeTabs() {
 
     fetchMemes();
   }, [activeTab]);
-
+  const handleDelete = (memeId: string) => {
+    try {
+      // Get current memes from localStorage
+      const currentMemes = JSON.parse(localStorage.getItem('uploadedMemes') || '[]');
+      
+      // Filter out the deleted meme
+      const updatedMemes = currentMemes.filter((meme: Meme) => meme.id !== memeId);
+      
+      // Update localStorage
+      localStorage.setItem('uploadedMemes', JSON.stringify(updatedMemes));
+      
+      // Update state
+      setMemes(updatedMemes);
+      
+      console.log('Meme deleted successfully');
+    } catch (error) {
+      console.error('Error deleting meme:', error);
+    }
+  };
   return (
     <div className="mt-8">
       {/* Tab Navigation */}
@@ -126,7 +144,22 @@ export default function MemeTabs() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {memes.map((meme) => (
-              <MemeCard key={meme.id} meme={meme} />
+               <div key={meme.id} className="relative group">
+               <MemeCard meme={meme} />
+               {activeTab === 'uploaded' && (
+                 <button
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     handleDelete(meme.id);
+                   }}
+                   className="absolute top-2 right-2 p-2 bg-red-500 rounded-full 
+                            hover:bg-red-600 transition-colors z-20
+                            opacity-0 group-hover:opacity-100"
+                 >
+                   <TrashIcon className="h-5 w-5 text-white" />
+                 </button>
+               )}
+             </div>
             ))}
           </motion.div>
         ) : (
